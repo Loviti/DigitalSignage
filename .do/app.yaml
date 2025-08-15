@@ -1,0 +1,89 @@
+name: screenlite
+region: nyc
+
+services:
+  # CMS / API (Fastify)
+  - name: cms
+    github:
+      repo: Loviti/DigitalSignage
+      branch: main
+      deploy_on_push: true
+      dockerfile_path: server/Dockerfile.dev
+      build_context: server
+    http_port: 8080
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8080"
+      # --- Postgres (Managed Database) ---
+      - key: DATABASE_URL      # Prisma style, e.g. postgres://user:pass@host:port/db
+        scope: RUN_TIME
+        value: ${DATABASE_URL}
+      # --- Redis (Managed Redis) ---
+      - key: REDIS_URL         # e.g. redis://default:pass@host:port
+        scope: RUN_TIME
+        value: ${REDIS_URL}
+      # --- S3 / Spaces ---
+      - key: S3_ENDPOINT       # e.g. nyc3.digitaloceanspaces.com
+        scope: RUN_TIME
+        value: ${S3_ENDPOINT}
+      - key: S3_REGION         # e.g. nyc3
+        scope: RUN_TIME
+        value: ${S3_REGION}
+      - key: S3_ACCESS_KEY
+        scope: RUN_TIME
+        value: ${S3_ACCESS_KEY}
+      - key: S3_SECRET_KEY
+        scope: RUN_TIME
+        value: ${S3_SECRET_KEY}
+      - key: S3_BUCKET
+        scope: RUN_TIME
+        value: ${S3_BUCKET}
+
+workers:
+  # background media/FFmpeg worker
+  - name: ffmpeg-service
+    github:
+      repo: Loviti/DigitalSignage
+      branch: main
+      deploy_on_push: true
+      dockerfile_path: ffmpeg-service/Dockerfile.dev
+      build_context: ffmpeg-service
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${DATABASE_URL}
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${REDIS_URL}
+      - key: S3_ENDPOINT
+        scope: RUN_TIME
+        value: ${S3_ENDPOINT}
+      - key: S3_REGION
+        scope: RUN_TIME
+        value: ${S3_REGION}
+      - key: S3_ACCESS_KEY
+        scope: RUN_TIME
+        value: ${S3_ACCESS_KEY}
+      - key: S3_SECRET_KEY
+        scope: RUN_TIME
+        value: ${S3_SECRET_KEY}
+      - key: S3_BUCKET
+        scope: RUN_TIME
+        value: ${S3_BUCKET}
+
+static_sites:
+  # Vite client (built to /dist and served as a static site)
+  - name: client
+    github:
+      repo: Loviti/DigitalSignage
+      branch: main
+      deploy_on_push: true
+      source_dir: client
+    build_command: "npm ci && npm run build"
+    output_dir: "dist"
+    routes:
+      - path: /
